@@ -208,15 +208,21 @@ PortC_Init:
 ; -----------------------------------------------------------------------------
 
 Serial_Init:
+	;           ,,,------ disable timer1
+	;           |||,----- disable timer0 (for now)
+	;           ||||,,--- clock/12
+	;           ||||||,,- output timer0
+	mvi   tmm, 010010000b
+	mvi   a,   4 ; clock/(12*2*4) = 115200 baud
+	mov   tm0, a
 	;           ,-------- unused
 	;           |,------- disable SCK
 	;           ||,------ disable interface mode
 	;           |||,----- disable search mode
 	;           ||||,---- disable Rx
 	;           |||||,--- disable Tx (for now)
-	;           ||||||,,- f/384 baud
-	mvi   a,   000000001b
-	mov   smh, a
+	;           ||||||,,- use timer output
+	mvi   smh, 000000000b
 	;           ,,------- 1 stop bit
 	;           ||,,----- no parity
 	;           ||||,,--- 8 data bits
@@ -229,6 +235,8 @@ Serial_Init:
 Serial_Enable:
 	;                ,--- enable Tx
 	ori   smh, 000000100b
+	;              ,----- enable timer0
+	ani   tmm, 011101111b
 	; unmask serial tx irq, mask others
 	mvi   a,   011111111b
 	mov   mkl, a
@@ -260,7 +268,8 @@ Serial_WriteNibble:
 	; fall through
 Serial_WriteByte:
 	mov   txb, a
--	skit  fst
+-	hlt
+	skit  fst
 	jr    -
 	ret
 
