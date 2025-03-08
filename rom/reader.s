@@ -1,9 +1,27 @@
+; -----------------------------------------------------------------------------
+; NEC 87AD reader source for external ROM
+; Written for the Macro Assembler AS (http://john.ccac.rwth-aachen.de:8000/as/).
+; Burn this to a 27C256 EPROM or compatible (AT29C256, W27E257, etc)
+;
+; The reader PCB is wired up to initially boot from this external ROM, which is
+; mapped to both the 0000-7FFF and 8000-FFFF areas by leaving A15 unused.
+; This does two things:
+; - allows always running from external ROM even after enabling up to 32kb of internal ROM
+; - allows comparing the upper and lower halves of memory to detect the internal ROM size
+;
+; After booting and then jumping to the ROM mirror at 8000+, MODE0 is pulled low via PC7,
+; which immediately enables internal ROM. The size is detected, and then the contents are
+; output in Intel HEX format over serial (115200 baud, 8N1).
+; -----------------------------------------------------------------------------
+
 	cpu 7810
 	
 PORT_C_TXD   equ 001h
 PORT_C_LED   equ 020h
-PORT_C_MODE1 equ 040h
-PORT_C_MODE0 equ 080h
+; NOTE: if modifying this code, take care to never directly drive these high
+; (see comment in Port_Init)
+PORT_C_MODE1 equ 040h ; not really used, just reusing the pullup on PC6
+PORT_C_MODE0 equ 080h ; bring low to enable internal ROM
 
 ; -----------------------------------------------------------------------------
 ; internal RAM
@@ -34,7 +52,7 @@ PortCMode: db ?
 	org 08028h
 	reti
 	org 08030h
-	db "External ROM for 87AD reader (test ver.)"
+	db "External ROM for 87AD reader (v1.0)"
 	org 08060h
 	reti
 	
